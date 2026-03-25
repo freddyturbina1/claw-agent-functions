@@ -37,4 +37,17 @@ Skills are shared. Your setup is yours. Keeping them apart means you can update 
 
 ---
 
+## Google Calendar (gcalcli)
+
+- **Wrapper:** `skills/gcalcli-calendar/gcalcli-wrapper.sh`
+- **Config:** `~/.gcalcli/` (credenciales OAuth en pickle `oauth`)
+- **Calendarios:** sebastian@ilitglobal.com (principal), se.urquiza@gmail.com
+- **Uso:** `bash skills/gcalcli-calendar/gcalcli-wrapper.sh --nocolor agenda today +7d`
+- **Token:** tiene refresh_token, no caduca manualmente
+
+## Google Gmail
+
+- **Auth:** mismo token OAuth en `~/.gcalcli/token.json` (scopes: gmail.readonly + gmail.modify)
+- **Acceso vía:** Python google-api-python-client (gmail API v1)
+
 Add whatever helps you do your job. This is your cheat sheet.

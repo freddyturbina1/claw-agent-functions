@@ -1,0 +1,15 @@
+# Tokens y credenciales
+~/.gcalcli/
+~/.whoop/
+~/.slack/
+
+# Estado interno de OpenClaw
+.openclaw/
+
+# Imágenes y archivos temporales
+*.png
+*.jpg
+*.jpeg
+
+# Archivos de sesión sensibles
+memory/heartbeat-state.json
