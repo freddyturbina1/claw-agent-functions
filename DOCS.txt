@@ -1,0 +1,203 @@
+========================================================
+  CLAW AGENT FUNCTIONS — DOCUMENTACIÓN COMPLETA
+  Repositorio: https://github.com/freddyturbina1/claw-agent-functions
+  Agente: Claw 🦾 — Chief of Staff de Seba (Sebastián Urquiza)
+========================================================
+
+Este repositorio contiene las skills instaladas, scripts de autenticación
+y archivos de memoria del agente Claw, que corre sobre OpenClaw en el
+Mac mini de Seba.
+
+========================================================
+  SKILLS
+========================================================
+
+----------------------------------------------------------
+  skills/gcalcli-calendar/
+----------------------------------------------------------
+PARA QUÉ SIRVE:
+  Permite a Claw leer el Google Calendar de Seba (eventos, agenda,
+  reuniones) usando la herramienta de línea de comandos gcalcli.
+
+CUENTAS QUE CUBRE:
+  - sebastian@ilitglobal.com (calendario principal, incluye PandaGo)
+  - se.urquiza@gmail.com (personal)
+
+ARCHIVO CLAVE:
+  gcalcli-wrapper.sh — script bash que invoca gcalcli con las credenciales
+  correctas (client_id y client_secret se cargan como variables de entorno
+  GCALCLI_CLIENT_ID y GCALCLI_CLIENT_SECRET; los tokens OAuth están en
+  ~/.gcalcli/).
+
+USO TÍPICO:
+  bash skills/gcalcli-calendar/gcalcli-wrapper.sh --nocolor agenda today +7d
+
+NOTA IMPORTANTE:
+  El evento "Busy" en el calendario = sesión de entrenamiento de Seba.
+
+----------------------------------------------------------
+  skills/news-summary/
+----------------------------------------------------------
+PARA QUÉ SIRVE:
+  Obtiene noticias desde feeds RSS internacionales (BBC, Reuters, Al Jazeera)
+  y genera resúmenes para el brief matutino de Seba.
+
+TEMÁTICAS DE INTERÉS DE SEBA:
+  - Delivery y EVs (sector PandaGo)
+  - Conflictos internacionales
+  - Latinoamérica y España
+  - Noticias de mundo en general
+
+USO TÍPICO:
+  Se activa automáticamente en el brief matutino de las 08:00.
+
+----------------------------------------------------------
+  skills/self-improving-agent/
+----------------------------------------------------------
+PARA QUÉ SIRVE:
+  Sistema de aprendizaje continuo para Claw. Registra errores, correcciones
+  y mejores prácticas en archivos de texto para que el agente aprenda con
+  el tiempo y no repita los mismos errores.
+
+ARCHIVOS QUE GENERA (en skills/self-improving-agent/.learnings/):
+  - ERRORS.md         → cuando falla un comando, herramienta o integración
+  - LEARNINGS.md      → cuando Seba corrige al agente o se encuentra una forma mejor
+  - FEATURE_REQUESTS.md → cuando Seba pide algo que Claw no sabe hacer aún
+
+REGLAS DE PROMOCIÓN (cuándo escalar a archivos globales):
+  - Mejoras de workflow → AGENTS.md
+  - Gotchas de herramientas → TOOLS.md
+  - Patrones de comportamiento → SOUL.md
+  - Aprendizajes amplios → MEMORY.md
+
+SCRIPTS INCLUIDOS:
+  - activator.sh      → activa el hook de OpenClaw para esta skill
+  - error-detector.sh → detecta errores en el output de comandos
+  - extract-skill.sh  → extrae el contenido de una skill para revisión
+
+========================================================
+  SCRIPTS DE AUTENTICACIÓN (scripts/)
+========================================================
+
+----------------------------------------------------------
+  scripts/auth_gmail_calendar.py
+----------------------------------------------------------
+PARA QUÉ SIRVE:
+  Autentica la cuenta personal se.urquiza@gmail.com con Google OAuth
+  para acceso al calendario de Gmail.
+
+GENERA:
+  ~/.gcalcli/token_gmail.json
+
+CUÁNDO USARLO:
+  Solo si el token de Gmail expira o se revoca. Abre el navegador
+  para que Seba autorice manualmente.
+
+----------------------------------------------------------
+  scripts/auth_drive.py
+----------------------------------------------------------
+PARA QUÉ SIRVE:
+  Autentica sebastian@ilitglobal.com con Google OAuth para acceso
+  a Google Drive (solo lectura) y Google Calendar.
+
+GENERA:
+  ~/.gcalcli/token_drive.json
+
+PARA QUÉ USA DRIVE:
+  Buscar y leer transcripts/notas de reuniones guardadas como Google Docs
+  (generadas por Gemini automáticamente tras las reuniones).
+
+CUÁNDO USARLO:
+  Solo si el token de Drive expira o se revoca.
+
+----------------------------------------------------------
+  scripts/auth_work_calendar.py
+----------------------------------------------------------
+PARA QUÉ SIRVE:
+  Autentica la cuenta de trabajo sebastian.urquiza@pandago.eco con
+  Google OAuth para acceso al calendario corporativo de PandaGo.
+
+GENERA:
+  ~/.gcalcli/token_work.json
+
+CUÁNDO USARLO:
+  Solo si el token de trabajo expira o se revoca.
+
+----------------------------------------------------------
+  scripts/auth_whoop.py
+----------------------------------------------------------
+PARA QUÉ SIRVE:
+  Autentica con la API de Whoop via OAuth2 para leer datos de salud
+  y recuperación de Seba.
+
+GENERA:
+  ~/.whoop/token.json
+
+DATOS QUE PERMITE LEER:
+  - Recuperación diaria (recovery score 0-100)
+  - Ciclos de strain
+  - Sueño
+  - Workouts
+  - Perfil y medidas corporales
+
+CUÁNDO USARLO:
+  Solo si el token de Whoop expira (tiene refresh_token, normalmente
+  se renueva automáticamente).
+
+----------------------------------------------------------
+  scripts/whoop_test.py
+----------------------------------------------------------
+PARA QUÉ SIRVE:
+  Script de prueba rápida para verificar que la API de Whoop funciona.
+  Muestra el perfil, la última recuperación y los últimos 3 workouts.
+
+CUÁNDO USARLO:
+  Para diagnosticar si hay problemas con el token o la API de Whoop.
+
+NOTA:
+  El token se refresca automáticamente antes de cada llamada real.
+  El User ID de Seba en Whoop es: 30856155
+
+========================================================
+  INTEGRACIONES ACTIVAS (no en este repo, pero sí en el agente)
+========================================================
+
+GOOGLE CALENDAR
+  Token: ~/.gcalcli/token.json (cuenta principal sebastian@ilitglobal.com)
+  Incluye calendarios de PandaGo y Gmail personal.
+
+GMAIL
+  Mismo token OAuth, acceso via Gmail API v1 (readonly + modify).
+
+GOOGLE DRIVE
+  Token: ~/.gcalcli/token_drive.json
+  Para leer transcripts de reuniones (Google Docs generados por Gemini).
+
+WHOOP
+  Token: ~/.whoop/token.json
+  API v2. Recuperación, strain, sueño, workouts.
+
+SLACK
+  Token: ~/.slack/config.json (xoxp — user token, solo lectura)
+  Canales monitorizados: liderazgo, smart product, smart fleet, DMs clave.
+
+========================================================
+  CRONS ACTIVOS
+========================================================
+
+  08:00 diario → Morning Brief (agenda + Whoop + entrenamiento + noticias)
+  16:00 diario → Post-entreno: pide pantallazo Garmin si hubo "Busy" ese día
+  21:00 diario → Brief cierre de día (reuniones + follow-ups + mañana)
+
+========================================================
+  NOTAS DE SEGURIDAD
+========================================================
+
+- Los tokens OAuth (Google, Whoop, Slack) están SOLO en local (~/)
+  y están excluidos del repo via .gitignore.
+- El script auth_whoop.py contiene CLIENT_SECRET hardcodeado —
+  es solo para reautenticación manual, no se ejecuta en producción.
+- El wrapper de gcalcli usa variables de entorno para las credenciales
+  (GCALCLI_CLIENT_ID / GCALCLI_CLIENT_SECRET) — no hardcodeadas.
+- GitHub Push Protection está activo en el repo: bloqueará commits
+  con secretos detectados automáticamente.
