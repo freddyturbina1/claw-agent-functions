@@ -77,7 +77,12 @@ def main():
         print(f"❌ Error obteniendo token: {resp.status_code} {resp.text}")
         return
 
+    import time
     token = resp.json()
+    # Calcular expires_at absoluto para que el refresh automático sepa cuándo actuar
+    if "expires_in" in token and "expires_at" not in token:
+        token["expires_at"] = int(time.time()) + token["expires_in"]
+
     with open(TOKEN_PATH, "w") as f:
         json.dump(token, f, indent=2)
 
