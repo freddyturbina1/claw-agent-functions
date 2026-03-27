@@ -27,6 +27,14 @@
 - **Log de entrenamientos:** `memory/training-log.md`
 - **Protocolo según Whoop:** recovery ≥80% → calidad | 60-79% → moderado | <60% → suave/descanso
 
+## Repositorio GitHub — SIEMPRE RECORDAR
+- **Repo:** https://github.com/freddyturbina1/claw-agent-functions
+- **Cuenta:** freddyturbina1 (gh CLI autenticado)
+- **Remote:** origin → configurado en el workspace local
+- **Regla:** cuando Seba pida "push" o "sincroniza con GitHub" → `git add . && git commit && git push origin main`
+- **Importante:** nunca commitear tokens ni credenciales hardcodeadas (GitHub Protection activo)
+- El wrapper de gcalcli usa `${GCALCLI_CLIENT_ID}` y `${GCALCLI_CLIENT_SECRET}` como env vars
+
 ## Crons activos
 - **08:00 diario** — Morning Brief (agenda + Whoop + entrenamiento + noticias) → Telegram
 - **16:00 diario** — Post-entreno: pide pantallazo Garmin si hubo "Busy" ese día → Telegram
@@ -61,6 +69,13 @@
 - **Email:** freddy.turbina.oc@gmail.com
 - **Password:** OpenClaw123! (guardada en `memory/agent-gmail.md`)
 - Creada por Seba el 25 mar 2026 para que pueda crear cuentas y operar sin límites
+
+## Preferencias de noticias
+Seba quiere noticias diarias (siempre del día o día anterior) agrupadas en estos bloques:
+- 🚚 Delivery / EV (movilidad eléctrica, renting, sector delivery España)
+- 💰 Economía / Mercados (España, Europa, macro)
+- 🌍 Mundo / Conflictos (guerras, geopolítica)
+- 🚀 Tech / Startups (tecnología, startups España e internacional)
 
 ## Sobre mí
 - Me llamo Claw 🦾
