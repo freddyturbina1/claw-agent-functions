@@ -1,0 +1,26 @@
+{
+  "last_updated": "2026-05-04",
+  "source": "memory/cartera-inversiones.md",
+  "base_currency": "EUR",
+  "holdings": [
+    {"name": "Intel", "ticker": "INTC", "currency": "USD", "total_eur": 439.84, "pnl_pct": 185.0},
+    {"name": "NVIDIA", "ticker": "NVDA", "currency": "USD", "total_eur": 302.80, "pnl_pct": 2.33},
+    {"name": "Netflix", "ticker": "NFLX", "currency": "USD", "total_eur": 70.57, "pnl_pct": -17.36},
+    {"name": "Chevron", "ticker": "CVX", "currency": "USD", "total_eur": 23.84, "pnl_pct": 11.65},
+    {"name": "Tesla", "ticker": "TSLA", "currency": "USD", "total_eur": 22.18, "pnl_pct": 34.58},
+    {"name": "Merck", "ticker": "MRK", "currency": "USD", "total_eur": 22.10, "pnl_pct": 3.50},
+    {"name": "Iberdrola", "ticker": "IBE1", "currency": "EUR", "total_eur": 2.87, "pnl_pct": 43.25},
+    {"name": "Qualcomm", "ticker": "QCOM", "currency": "USD", "total_eur": 1.77, "pnl_pct": 3.61},
+    {"name": "Hexatronic Group AB", "ticker": "O2HO", "currency": "EUR", "total_eur": 0.00, "pnl_pct": -21.37}
+  ],
+  "robo_advisor": {
+    "name": "Bold Stack",
+    "risk": "4/5",
+    "total_eur": 9.44
+  },
+  "total_eur": 895.57,
+  "pending_orders": [
+    {"action": "SELL", "ticker": "TSLA", "shares": 0.067, "value_usd": 26.20},
+    {"action": "BUY", "ticker": "EBAY", "shares": 0.17, "value_usd": 20.0}
+  ]
+}

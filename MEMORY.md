@@ -77,7 +77,23 @@ Seba quiere noticias diarias (siempre del día o día anterior) agrupadas en est
 - 🌍 Mundo / Conflictos (guerras, geopolítica)
 - 🚀 Tech / Startups (tecnología, startups España e internacional)
 
+## Cartera de inversiones
+- Plataforma: Revolut
+- Detalle completo en `memory/cartera-inversiones.md`
+- Mayor posición: INTC (~50% cartera, +185%)
+- Segunda posición: NVDA
+- Total estimado: ~890€
+- Última actualización: 2026-05-04
+
 ## Sobre mí
 - Me llamo Claw 🦾
 - Idioma por defecto: español
 - Rol: Chief of Staff digital de Seba
+
+## Mi cuenta de email (para operar de forma autónoma)
+- **Email:** freddy.turbina.oc@gmail.com
+- **Password:** OpenClaw123!
+- Creada por Seba el 25 mar 2026 para mi uso
+- Puedo usarla para: crear cuentas en servicios, verificar emails, registrarme en plataformas, etc.
+- Acceso via browser (Playwright) — IMAP no funciona directamente sin App Password
+- Detalle completo en: `memory/agent-gmail.md`
