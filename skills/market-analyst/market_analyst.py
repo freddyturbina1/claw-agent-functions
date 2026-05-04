@@ -111,6 +111,48 @@ def fetch_url(url, timeout=10):
     except Exception as e:
         return None
 
+def is_retrospective(title, description=""):
+    """
+    Detect articles that are analysis/recap of past events rather than breaking news.
+    Returns True if the article should be excluded.
+    """
+    text = (title + " " + description).lower()
+
+    # Explicit time references to the past
+    past_patterns = [
+        r'\b\d+ days? ago\b',
+        r'\blast (week|month|quarter|year|monday|tuesday|wednesday|thursday|friday)\b',
+        r'\bthis (past|previous)\b',
+        r'\bweek of (jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)\b',
+        r'\b(january|february|march|april|june|july|august|september|october|november|december) \d{1,2}(st|nd|rd|th)?\b',
+        r'\bin (q[1-4]|q1|q2|q3|q4) 20\d{2}\b',
+        r'\bsince (january|february|march|monday|last)\b',
+        r'\bover the (past|last) (week|month|year|days?|weeks?|months?)\b',
+        r'\bthrough (january|february|march|april|may|q[1-4])\b',
+    ]
+
+    # Content type signals (retrospective formats)
+    retrospective_keywords = [
+        'recap', 'review', 'look back', 'lookback', 'in review',
+        'week in review', 'weekly roundup', 'monthly roundup',
+        'what happened', 'what you missed', 'catch up',
+        'earnings recap', 'market recap', 'here\'s what',
+        'why did', 'why has', 'what caused', 'explaining the',
+        'deep dive', 'analysis of', 'how it happened',
+        'a year ago', 'years ago', 'months ago', 'weeks ago',
+        'previously', 'historically', 'back in', 'since then',
+    ]
+
+    for pattern in past_patterns:
+        if re.search(pattern, text):
+            return True
+
+    for kw in retrospective_keywords:
+        if kw in text:
+            return True
+
+    return False
+
 def parse_pub_date(date_str):
     """Parse pubDate string to UTC datetime. Returns None if unparseable."""
     if not date_str:
@@ -174,7 +216,7 @@ def parse_rss(xml_text, max_age_minutes=90):
         date_m = date_pattern.search(item_text)
         pub_date = (date_m.group(1) or "").strip() if date_m else ""
         
-        if title and is_recent(pub_date, max_age_minutes):
+        if title and is_recent(pub_date, max_age_minutes) and not is_retrospective(title, desc):
             items.append({
                 "title": title,
                 "description": desc,
@@ -202,13 +244,16 @@ def fetch_alphavantage(api_key, max_age_minutes=90):
                 pub_date = f"{pub_date[:4]}-{pub_date[4:6]}-{pub_date[6:8]}T{pub_date[9:11]}:{pub_date[11:13]}:{pub_date[13:15]}Z"
             if not is_recent(pub_date, max_age_minutes):
                 continue
-            items.append({
-                "title": a.get("title", ""),
-                "description": a.get("summary", "")[:300],
-                "link": a.get("url", ""),
-                "pub_date": pub_date,
-                "source": a.get("source", "AlphaVantage")
-            })
+            title = a.get("title", "")
+            desc = a.get("summary", "")[:300]
+            if title and not is_retrospective(title, desc):
+                items.append({
+                    "title": title,
+                    "description": desc,
+                    "link": a.get("url", ""),
+                    "pub_date": pub_date,
+                    "source": a.get("source", "AlphaVantage")
+                })
         return items
     except:
         return []
@@ -234,10 +279,11 @@ def fetch_finnhub(api_key, max_age_minutes=90):
             else:
                 pub_date = ""
             title = a.get("headline", "")
-            if title:
+            desc = a.get("summary", "")[:300]
+            if title and not is_retrospective(title, desc):
                 items.append({
                     "title": title,
-                    "description": a.get("summary", "")[:300],
+                    "description": desc,
                     "link": a.get("url", ""),
                     "pub_date": pub_date,
                     "source": a.get("source", "Finnhub")
@@ -267,10 +313,11 @@ def fetch_polygon(api_key, max_age_minutes=90):
         items = []
         for a in articles:
             title = a.get("title", "")
-            if title:
+            desc = a.get("description", "")[:300]
+            if title and not is_retrospective(title, desc):
                 items.append({
                     "title": title,
-                    "description": a.get("description", "")[:300],
+                    "description": desc,
                     "link": a.get("article_url", ""),
                     "pub_date": a.get("published_utc", ""),
                     "source": a.get("publisher", {}).get("name", "Polygon")
@@ -300,10 +347,11 @@ def fetch_thenewsapi(api_key, max_age_minutes=90):
         items = []
         for a in articles:
             title = a.get("title", "")
-            if title:
+            desc = a.get("description", "")[:300]
+            if title and not is_retrospective(title, desc):
                 items.append({
                     "title": title,
-                    "description": a.get("description", "")[:300],
+                    "description": desc,
                     "link": a.get("url", ""),
                     "pub_date": a.get("published_at", ""),
                     "source": a.get("source", "TheNewsAPI")
