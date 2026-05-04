@@ -184,6 +184,134 @@ def parse_rss(xml_text, max_age_minutes=90):
     
     return items[:20]  # Max 20 per feed
 
+def fetch_alphavantage(api_key, max_age_minutes=90):
+    """Fetch market news from Alpha Vantage (real-time, per ticker)."""
+    tickers = "NVDA,NFLX,INTC,TSLA,MSFT,AAPL,GOOGL,AMZN,META,AMD,COIN,CVX,MRK"
+    url = f"https://www.alphavantage.co/query?function=NEWS_SENTIMENT&tickers={tickers}&limit=50&apikey={api_key}"
+    data = fetch_url(url)
+    if not data:
+        return []
+    try:
+        result = json.loads(data)
+        articles = result.get("feed", [])
+        items = []
+        for a in articles:
+            pub_date = a.get("time_published", "")  # Format: 20260504T103000
+            # Convert to parseable format
+            if len(pub_date) == 15:
+                pub_date = f"{pub_date[:4]}-{pub_date[4:6]}-{pub_date[6:8]}T{pub_date[9:11]}:{pub_date[11:13]}:{pub_date[13:15]}Z"
+            if not is_recent(pub_date, max_age_minutes):
+                continue
+            items.append({
+                "title": a.get("title", ""),
+                "description": a.get("summary", "")[:300],
+                "link": a.get("url", ""),
+                "pub_date": pub_date,
+                "source": a.get("source", "AlphaVantage")
+            })
+        return items
+    except:
+        return []
+
+def fetch_finnhub(api_key, max_age_minutes=90):
+    """Fetch market news from Finnhub (real-time general market news)."""
+    url = f"https://finnhub.io/api/v1/news?category=general&token={api_key}"
+    data = fetch_url(url)
+    if not data:
+        return []
+    try:
+        articles = json.loads(data)
+        items = []
+        for a in articles:
+            # Finnhub uses Unix timestamp
+            ts = a.get("datetime", 0)
+            if ts:
+                dt = datetime.fromtimestamp(ts, tz=timezone.utc)
+                age_minutes = (datetime.now(timezone.utc) - dt).total_seconds() / 60
+                if age_minutes > max_age_minutes:
+                    continue
+                pub_date = dt.isoformat()
+            else:
+                pub_date = ""
+            title = a.get("headline", "")
+            if title:
+                items.append({
+                    "title": title,
+                    "description": a.get("summary", "")[:300],
+                    "link": a.get("url", ""),
+                    "pub_date": pub_date,
+                    "source": a.get("source", "Finnhub")
+                })
+        return items
+    except:
+        return []
+
+def fetch_polygon(api_key, max_age_minutes=90):
+    """Fetch market news from Polygon.io."""
+    from_time = (datetime.now(timezone.utc) - timedelta(minutes=max_age_minutes)).strftime("%Y-%m-%dT%H:%M:%SZ")
+    tickers = "NVDA,NFLX,INTC,TSLA,AAPL,MSFT,GOOGL,META,AMZN,AMD,CVX,MRK,COIN"
+    params = urllib.parse.urlencode({
+        "ticker.any_of": tickers,
+        "published_utc.gte": from_time,
+        "order": "desc",
+        "limit": 50,
+        "apiKey": api_key
+    })
+    url = f"https://api.polygon.io/v2/reference/news?{params}"
+    data = fetch_url(url)
+    if not data:
+        return []
+    try:
+        result = json.loads(data)
+        articles = result.get("results", [])
+        items = []
+        for a in articles:
+            title = a.get("title", "")
+            if title:
+                items.append({
+                    "title": title,
+                    "description": a.get("description", "")[:300],
+                    "link": a.get("article_url", ""),
+                    "pub_date": a.get("published_utc", ""),
+                    "source": a.get("publisher", {}).get("name", "Polygon")
+                })
+        return items
+    except:
+        return []
+
+def fetch_thenewsapi(api_key, max_age_minutes=90):
+    """Fetch financial news from TheNewsAPI."""
+    from_time = (datetime.now(timezone.utc) - timedelta(minutes=max_age_minutes)).strftime("%Y-%m-%dT%H:%M:%S")
+    params = urllib.parse.urlencode({
+        "api_token": api_key,
+        "categories": "business,tech",
+        "language": "en",
+        "published_after": from_time,
+        "sort": "published_at",
+        "limit": 50
+    })
+    url = f"https://api.thenewsapi.com/v1/news/all?{params}"
+    data = fetch_url(url)
+    if not data:
+        return []
+    try:
+        result = json.loads(data)
+        articles = result.get("data", [])
+        items = []
+        for a in articles:
+            title = a.get("title", "")
+            if title:
+                items.append({
+                    "title": title,
+                    "description": a.get("description", "")[:300],
+                    "link": a.get("url", ""),
+                    "pub_date": a.get("published_at", ""),
+                    "source": a.get("source", "TheNewsAPI")
+                })
+        return items
+    except:
+        return []
+
 def fetch_newsapi(api_key, query, from_hours=2):
     """Fetch from NewsAPI."""
     from_time = (datetime.now(timezone.utc) - timedelta(hours=from_hours)).strftime("%Y-%m-%dT%H:%M:%S")
@@ -254,6 +382,42 @@ def collect_news(config, state, max_age_minutes=90):
                 item["source"] = feed_url.split("/")[2]
                 all_articles.append(item)
     
+    # Alpha Vantage — noticias por ticker con sentimiento, tiempo real
+    alphavantage_key = config.get("alphavantage_key", "")
+    if alphavantage_key:
+        print(f"[{datetime.now().strftime('%H:%M:%S')}] Fetching Alpha Vantage...", file=sys.stderr)
+        for a in fetch_alphavantage(alphavantage_key, max_age_minutes):
+            uid = a["title"][:80]
+            if uid not in seen:
+                all_articles.append(a)
+
+    # Finnhub — noticias generales de mercado, tiempo real
+    finnhub_key = config.get("finnhub_key", "")
+    if finnhub_key:
+        print(f"[{datetime.now().strftime('%H:%M:%S')}] Fetching Finnhub...", file=sys.stderr)
+        for a in fetch_finnhub(finnhub_key, max_age_minutes):
+            uid = a["title"][:80]
+            if uid not in seen:
+                all_articles.append(a)
+
+    # Polygon.io — noticias por ticker
+    polygon_key = config.get("polygon_key", "")
+    if polygon_key:
+        print(f"[{datetime.now().strftime('%H:%M:%S')}] Fetching Polygon...", file=sys.stderr)
+        for a in fetch_polygon(polygon_key, max_age_minutes):
+            uid = a["title"][:80]
+            if uid not in seen:
+                all_articles.append(a)
+
+    # TheNewsAPI — business + tech news
+    thenewsapi_key = config.get("thenewsapi_key", "")
+    if thenewsapi_key:
+        print(f"[{datetime.now().strftime('%H:%M:%S')}] Fetching TheNewsAPI...", file=sys.stderr)
+        for a in fetch_thenewsapi(thenewsapi_key, max_age_minutes):
+            uid = a["title"][:80]
+            if uid not in seen:
+                all_articles.append(a)
+
     # NewsAPI — plan gratuito tiene delay 24h, usamos ventana amplia
     if newsapi_key and newsapi_key != "PENDING":
         print(f"[{datetime.now().strftime('%H:%M:%S')}] Fetching NewsAPI...", file=sys.stderr)
