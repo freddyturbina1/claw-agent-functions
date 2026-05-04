@@ -111,8 +111,41 @@ def fetch_url(url, timeout=10):
     except Exception as e:
         return None
 
-def parse_rss(xml_text):
-    """Simple RSS parser without external deps."""
+def parse_pub_date(date_str):
+    """Parse pubDate string to UTC datetime. Returns None if unparseable."""
+    if not date_str:
+        return None
+    # Common RSS date formats
+    formats = [
+        "%a, %d %b %Y %H:%M:%S %z",   # RFC 822: Mon, 04 May 2026 10:30:00 +0000
+        "%a, %d %b %Y %H:%M:%S GMT",   # Mon, 04 May 2026 10:30:00 GMT
+        "%Y-%m-%dT%H:%M:%S%z",         # ISO 8601: 2026-05-04T10:30:00+00:00
+        "%Y-%m-%dT%H:%M:%SZ",          # ISO 8601 UTC: 2026-05-04T10:30:00Z
+        "%Y-%m-%d %H:%M:%S",           # Simple: 2026-05-04 10:30:00
+    ]
+    date_str = date_str.strip()
+    # Normalize "GMT" to "+0000"
+    date_str_norm = date_str.replace("GMT", "+0000").replace("UTC", "+0000")
+    for fmt in formats:
+        try:
+            dt = datetime.strptime(date_str_norm, fmt)
+            if dt.tzinfo is None:
+                dt = dt.replace(tzinfo=timezone.utc)
+            return dt.astimezone(timezone.utc)
+        except:
+            continue
+    return None
+
+def is_recent(pub_date_str, max_minutes=90):
+    """Returns True if article is within max_minutes, or if date is unparseable (benefit of doubt)."""
+    dt = parse_pub_date(pub_date_str)
+    if dt is None:
+        return True  # Can't parse → include (better false positive than miss)
+    age_minutes = (datetime.now(timezone.utc) - dt).total_seconds() / 60
+    return age_minutes <= max_minutes
+
+def parse_rss(xml_text, max_age_minutes=90):
+    """Simple RSS parser without external deps. Filters by pubDate age."""
     items = []
     if not xml_text:
         return items
@@ -141,7 +174,7 @@ def parse_rss(xml_text):
         date_m = date_pattern.search(item_text)
         pub_date = (date_m.group(1) or "").strip() if date_m else ""
         
-        if title:
+        if title and is_recent(pub_date, max_age_minutes):
             items.append({
                 "title": title,
                 "description": desc,
@@ -202,19 +235,19 @@ def fetch_brave_search(api_key, query):
     except Exception as e:
         return []
 
-def collect_news(config, state):
+def collect_news(config, state, max_age_minutes=90):
     """Collect news from all sources."""
     all_articles = []
     seen = set(state.get("seen_articles", []))
     newsapi_key = config.get("newsapi_key", "")
     brave_key = config.get("brave_key", "")
 
-    print(f"[{datetime.now().strftime('%H:%M:%S')}] Fetching RSS feeds...", file=sys.stderr)
+    print(f"[{datetime.now().strftime('%H:%M:%S')}] Fetching RSS feeds (max_age={max_age_minutes}min)...", file=sys.stderr)
     
     # RSS feeds
     for feed_url in RSS_FEEDS:
         xml = fetch_url(feed_url)
-        items = parse_rss(xml)
+        items = parse_rss(xml, max_age_minutes=max_age_minutes)
         for item in items:
             uid = item["title"][:80]
             if uid not in seen:
@@ -414,9 +447,14 @@ def format_telegram_message(analysis, articles_count):
 def main():
     config = load_config()
     state = load_state()
-    
+
+    # Mode: "event" = 25 min window (evento-driven), default = 90 min (programados)
+    mode = os.environ.get("ANALYST_MODE", "scheduled")
+    max_age = 25 if mode == "event" else 90
+    print(f"[{datetime.now().strftime('%H:%M:%S')}] Mode: {mode} | max_age: {max_age} min", file=sys.stderr)
+
     # Collect news
-    articles = collect_news(config, state)
+    articles = collect_news(config, state, max_age_minutes=max_age)
     
     if not articles:
         print(json.dumps({"status": "no_new_articles", "message": "No hay noticias nuevas"}))
